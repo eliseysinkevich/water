@@ -16,9 +16,6 @@ uniform vec2 seaweed_coord2;
 uniform float seaweed_diff;
 uniform float seaweed_diff2;
 
-uniform float seaweed_depth_diff;
-uniform float seaweed_depth_diff2;
-
 attribute vec2 a_position;
 attribute float a_height;
 attribute vec2 a_normal;
@@ -73,11 +70,11 @@ void main (void) {
     float t1=(-u_seaweed_depth-v_position.z)/refracted.z;
 
     vec3 point_not_on_bed=v_position+t1*refracted;
-    v_seaweed_texcoord=point_not_on_bed.xy*seaweed_depth_diff+seaweed_coord;
+    v_seaweed_texcoord=point_not_on_bed.xy*1.5+seaweed_coord;
     
     float t2=(-u_seaweed_depth2-v_position.z)/refracted.z;
     vec3 point_not_on_bed2=v_position+t2*refracted;
-    v_seaweed_texcoord2=point_not_on_bed2.xy*seaweed_depth_diff2+seaweed_coord2;
+    v_seaweed_texcoord2=point_not_on_bed2.xy*1.5+seaweed_coord2;
     
     if(c1>0) {
         v_reflectance=reflection_refraction(from_eye, -normal, u_alpha, -c1, v_reflected, refracted);
@@ -223,8 +220,6 @@ class Canvas(app.Canvas):
         self.program["u_bed_depth"] = 1
         self.program["u_seaweed_depth"] = 0.99
         self.program["u_seaweed_depth2"] = 0.99
-        self.program["seaweed_depth_diff"] = 0
-        self.program["seaweed_depth_diff2"] = 0
         self.program["u_sun_direction"] = normalize([0, 0.9, 0.5])
         self.program["u_sun_direction2"] = normalize([0.5, 0.5, 0.0001])
         self.sun_direction2 = np.array([[1, 0, 0.5]], dtype=np.float32)
@@ -322,22 +317,20 @@ class Canvas(app.Canvas):
         else:
             self.sun_direction2 = self.sun_direction2 + np.array([[0.01, 0, 0]], dtype=np.float32)
         self.update()
-        self.сome_on_seaweed()
+        self.come_on_seaweed()
 
-    def сome_on_seaweed(self):
+    def come_on_seaweed(self):
         self.program["seaweed_diff"] = self.program["seaweed_diff"] + np.pi / 400
         self.program["seaweed_diff2"] = self.program["seaweed_diff2"] + np.pi / 400
         self.program["seaweed_coord"] = (
             [self.program["seaweed_coord"][0],
              (self.program["seaweed_coord"][1] + np.sin(self.program["seaweed_diff"]) / 300)]
         )
-        self.program["seaweed_depth_diff"] = np.sin(self.program["seaweed_diff"]) + 3
 
         self.program["seaweed_coord2"] = (
             [self.program["seaweed_coord2"][0],
              (self.program["seaweed_coord2"][1] + np.sin(self.program["seaweed_diff2"]) / 400)]
         )
-        self.program["seaweed_depth_diff2"] = np.sin(self.program["seaweed_diff2"]) + 2
 
     def on_resize(self, event):
         self.activate_zoom()
@@ -438,7 +431,6 @@ class Canvas(app.Canvas):
 
 
 if __name__ == '__main__':
-    # surface=Surface(size=(100,100), nwave=5, max_height=0.3)
     surface = CircularWaves(size=(100, 100), max_height=0.005)
     c = Canvas(surface)
     c.measure_fps()
