@@ -338,7 +338,8 @@ class Canvas(app.Canvas):
         self.program["u_seaweed_depth2"] = self.count_depth(self.program["seaweed_coord2"])
 
     def count_depth(self, coord):
-        return max(min(self.program["u_bed_depth"] - 0.01, (coord[1] + 1) * np.tan(self.seaweed_degree)), 0)
+        return max(min(self.program["u_bed_depth"] - 0.01, (coord[1] + 1) * np.tan(self.seaweed_degree / 180 * np.pi)),
+                   0)
 
     def on_resize(self, event):
         self.activate_zoom()
