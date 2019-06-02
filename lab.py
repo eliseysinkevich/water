@@ -199,6 +199,7 @@ class Canvas(app.Canvas):
         # store parameters
         self.surface = surface
         # read textures
+        self.seaweed_degree = 45
         self.sky = io.read_png(sky)
         self.bed = io.read_png(bed)
         self.seaweed = io.read_png("seaweed.png")
@@ -327,10 +328,17 @@ class Canvas(app.Canvas):
              (self.program["seaweed_coord"][1] + np.sin(self.program["seaweed_diff"]) / 300)]
         )
 
+        self.program["u_seaweed_depth"] = self.count_depth(self.program["seaweed_coord"])
+
         self.program["seaweed_coord2"] = (
             [self.program["seaweed_coord2"][0],
              (self.program["seaweed_coord2"][1] + np.sin(self.program["seaweed_diff2"]) / 400)]
         )
+
+        self.program["u_seaweed_depth2"] = self.count_depth(self.program["seaweed_coord2"])
+
+    def count_depth(self, coord):
+        return max(min(self.program["u_bed_depth"] - 0.01, (coord[1] + 1) * np.tan(self.seaweed_degree)), 0)
 
     def on_resize(self, event):
         self.activate_zoom()
