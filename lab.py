@@ -15,6 +15,7 @@ uniform vec2 seaweed_coord;
 uniform vec2 seaweed_coord2;
 uniform float seaweed_diff;
 uniform float seaweed_diff2;
+uniform float seaweed_degree;
 
 attribute vec2 a_position;
 attribute float a_height;
@@ -42,6 +43,10 @@ in  float alpha, in  float c1, out  vec3 reflected, out  vec3 refracted) {
     return (reflectance_s+reflectance_p)/2;
 }
 
+float count_depth(in vec2 coord) {
+    return coord.y * tan(seaweed_degree / 180 * 3.14);
+}
+
 void main (void) {
     v_position=vec3(a_position.xy,a_height);
     v_normal=normalize(vec3(a_normal, -1));
@@ -63,19 +68,19 @@ void main (void) {
     vec3 refracted=normalize(u_alpha*cross(cr,normal)-normal*c2);
     float c1=dot(normal,from_eye);
 
-    float t=(-u_bed_depth-v_position.z)/refracted.z;
+    float t = (-u_bed_depth - v_position.z) / refracted.z;
     vec3 point_on_bed=v_position+t*refracted;
     v_bed_texcoord=point_on_bed.xy+vec2(0.5,0.5);
 
-    float t1=(-u_seaweed_depth-v_position.z)/refracted.z;
+    float t1=(-count_depth(v_position.xy)-v_position.z)/refracted.z;
 
     vec3 point_not_on_bed=v_position+t1*refracted;
     v_seaweed_texcoord=point_not_on_bed.xy*1.5+seaweed_coord;
-    
-    float t2=(-u_seaweed_depth2-v_position.z)/refracted.z;
+
+    float t2=(-count_depth(v_position.xy)-v_position.z)/refracted.z;
     vec3 point_not_on_bed2=v_position+t2*refracted;
     v_seaweed_texcoord2=point_not_on_bed2.xy*1.5+seaweed_coord2;
-    
+
     if(c1>0) {
         v_reflectance=reflection_refraction(from_eye, -normal, u_alpha, -c1, v_reflected, refracted);
     } else {
@@ -102,7 +107,7 @@ uniform vec3 u_sun_diffused_color;
 uniform vec3 u_sun_reflected_color;
 uniform vec3 u_sun_diffused_color2;
 uniform vec3 u_sun_reflected_color2;
-      
+
 
 uniform float u_reflected_mult;
 uniform float u_reflected_mult2;
@@ -141,8 +146,8 @@ void main() {
     float cosphi2=max(0,dot(u_sun_direction2,normalize(v_reflected)));
     float reflected_intensity2=u_reflected_mult2*pow(cosphi2,100);
     vec3 ambient_water=vec3(0,0.302,0.498);
-    
-    
+
+
     vec4 eye_view=vec4(0,0,u_eye_height,1);
     vec4 eye=transpose(u_world_view)*eye_view;
     vec3 from_eye=normalize(v_position-eye.xyz);
@@ -199,7 +204,6 @@ class Canvas(app.Canvas):
         # store parameters
         self.surface = surface
         # read textures
-        self.seaweed_degree = 45
         self.sky = io.read_png(sky)
         self.bed = io.read_png(bed)
         self.seaweed = io.read_png("seaweed.png")
@@ -221,6 +225,7 @@ class Canvas(app.Canvas):
         self.program["u_bed_depth"] = 1
         self.program["u_seaweed_depth"] = 0.99
         self.program["u_seaweed_depth2"] = 0.99
+        self.program["seaweed_degree"] = 45
         self.program["u_sun_direction"] = normalize([0, 0.9, 0.5])
         self.program["u_sun_direction2"] = normalize([0.5, 0.5, 0.0001])
         self.sun_direction2 = np.array([[1, 0, 0.5]], dtype=np.float32)
@@ -328,18 +333,10 @@ class Canvas(app.Canvas):
              (self.program["seaweed_coord"][1] + np.sin(self.program["seaweed_diff"]) / 300)]
         )
 
-        self.program["u_seaweed_depth"] = self.count_depth(self.program["seaweed_coord"])
-
         self.program["seaweed_coord2"] = (
             [self.program["seaweed_coord2"][0],
              (self.program["seaweed_coord2"][1] + np.sin(self.program["seaweed_diff2"]) / 400)]
         )
-
-        self.program["u_seaweed_depth2"] = self.count_depth(self.program["seaweed_coord2"])
-
-    def count_depth(self, coord):
-        return max(min(self.program["u_bed_depth"] - 0.01, (coord[1] + 1) * np.tan(self.seaweed_degree / 180 * np.pi)),
-                   0)
 
     def on_resize(self, event):
         self.activate_zoom()
