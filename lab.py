@@ -43,13 +43,10 @@ in  float alpha, in  float c1, out  vec3 reflected, out  vec3 refracted) {
     return (reflectance_s+reflectance_p)/2;
 }
 
-float count_depth(in vec2 coord) {
-    return coord.y * tan(seaweed_degree / 180 * 3.14);
-}
-
 void main (void) {
     v_position=vec3(a_position.xy,a_height);
     v_normal=normalize(vec3(a_normal, -1));
+    vec3 seaweed_normal = vec3(-tan(seaweed_degree / 180 * 3.14), 0, -1 / tan(seaweed_degree / 180 * 3.14));
 
     vec4 position_view=u_world_view*vec4(v_position,1);
     float z=1-(1+position_view.z)/(1+u_eye_height);
@@ -72,12 +69,11 @@ void main (void) {
     vec3 point_on_bed=v_position+t*refracted;
     v_bed_texcoord=point_on_bed.xy+vec2(0.5,0.5);
 
-    float t1=(-count_depth(v_position.xy)-v_position.z)/refracted.z;
-
+    float t1 = (seaweed_normal.z - v_position.z) / refracted.z;
     vec3 point_not_on_bed=v_position+t1*refracted;
     v_seaweed_texcoord=point_not_on_bed.xy*1.5+seaweed_coord;
 
-    float t2=(-count_depth(v_position.xy)-v_position.z)/refracted.z;
+    float t2 = (seaweed_normal.z - v_position.z) / refracted.z;
     vec3 point_not_on_bed2=v_position+t2*refracted;
     v_seaweed_texcoord2=point_not_on_bed2.xy*1.5+seaweed_coord2;
 
